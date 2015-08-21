@@ -757,7 +757,8 @@ class IPListMixin(object):
     __bool__ = __nonzero__  #   Python 3.x.
 
 
-def parse_ip_network(module, addr, implicit_prefix=False, flags=0):
+def parse_ip_network(module, addr, implicit_prefix=False, flags=0,
+                     expand_partial_addresses=True):
     if isinstance(addr, tuple):
         #   CIDR integer tuple
         if len(addr) != 2:
@@ -785,7 +786,7 @@ def parse_ip_network(module, addr, implicit_prefix=False, flags=0):
         try:
             ip = IPAddress(val1, module.version, flags=INET_PTON)
         except AddrFormatError:
-            if module.version == 4:
+            if module.version == 4 and expand_partial_addresses:
                 #   Try a partial IPv4 network address...
                 expanded_addr = _ipv4.expand_partial_address(val1)
                 ip = IPAddress(expanded_addr, module.version, flags=INET_PTON)
@@ -868,7 +869,8 @@ class IPNetwork(BaseIP, IPListMixin):
     """
     __slots__ = ('_prefixlen',)
 
-    def __init__(self, addr, implicit_prefix=False, version=None, flags=0):
+    def __init__(self, addr, implicit_prefix=False, version=None, flags=0,
+                 expand_partial_addresses=True):
         """
         Constructor.
 
@@ -908,7 +910,8 @@ class IPNetwork(BaseIP, IPListMixin):
             prefixlen = module.width
         elif version == 4:
             value, prefixlen = parse_ip_network(_ipv4, addr,
-                implicit_prefix=implicit_prefix, flags=flags)
+                implicit_prefix=implicit_prefix, flags=flags,
+                expand_partial_addresses=expand_partial_addresses)
             module = _ipv4
         elif version == 6:
             value, prefixlen = parse_ip_network(_ipv6, addr,
@@ -920,7 +923,8 @@ class IPNetwork(BaseIP, IPListMixin):
             try:
                 module = _ipv4
                 value, prefixlen = parse_ip_network(module, addr,
-                    implicit_prefix, flags)
+                    implicit_prefix, flags,
+                    expand_partial_addresses=expand_partial_addresses)
             except AddrFormatError:
                 try:
                     module = _ipv6
